@@ -77,6 +77,20 @@ mse = torch.nn.MSELoss()
 mean_shift = MeanShift(gpu_id)
 vgg = Vgg16().to(gpu_id)
 
+def save_result(input_img, step_number):
+    # clamp the pixels range into 0 ~ 255
+    input_img.data.clamp_(0, 255)
+
+    # Make the Final Blended Image
+    blend_img = torch.zeros(target_img.shape).to(gpu_id)
+    blend_img = input_img*canvas_mask + target_img*(canvas_mask-1)*(-1)
+    blend_img_np = blend_img.transpose(1,3).transpose(1,2).cpu().data.numpy()[0]
+
+    # Save image from the first pass
+    name = source_file.split('/')[1].split('_')[0]
+    imsave(f'results/{str(name)}_first_pass_{str(step_number)}.png', blend_img_np.astype(np.uint8))
+
+
 run = [0]
 while run[0] <= num_steps:
     
@@ -139,22 +153,13 @@ while run[0] <= num_steps:
         
         run[0] += 1
         return loss
-    
+
+    if run[0] % 500 == 0 or run[0] == 10:
+        save_result(input_img, run[0])
     optimizer.step(closure)
 
-# clamp the pixels range into 0 ~ 255
-input_img.data.clamp_(0, 255)
 
-# Make the Final Blended Image
-blend_img = torch.zeros(target_img.shape).to(gpu_id)
-blend_img = input_img*canvas_mask + target_img*(canvas_mask-1)*(-1) 
-blend_img_np = blend_img.transpose(1,3).transpose(1,2).cpu().data.numpy()[0]
-
-# Save image from the first pass
-name = source_file.split('/')[1].split('_')[0]
-imsave('results/'+str(name)+'_first_pass.png', blend_img_np.astype(np.uint8))
-
-
+save_result(input_img, num_steps)
 
 ###################################
 ########### Second Pass ###########
@@ -233,7 +238,7 @@ while run[0] <= num_steps:
                           content_loss.item()
                           ))
             print()
-        
+
         run[0] += 1
         return loss
     

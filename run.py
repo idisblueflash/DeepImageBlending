@@ -171,9 +171,30 @@ target_img = np.array(Image.open(target_file).convert('RGB').resize((ts, ts)))
 first_pass_img = torch.from_numpy(first_pass_img).unsqueeze(0).transpose(1,3).transpose(2,3).float().to(gpu_id)
 target_img = torch.from_numpy(target_img).unsqueeze(0).transpose(1,3).transpose(2,3).float().to(gpu_id)
 
+# QuickFix for Broken Issue
+
+# RuntimeError: view size is not compatible with input tensor's size and stride
+# (at least one dimension spans across two contiguous subspaces).
+# Use .reshape(...) instead.
+
+
+class FixedLBFGS(optim.LBFGS):
+    def _gather_flat_grad(self):
+        views = []
+        for p in self._params:
+            if p.grad is None:
+                view = p.new(p.numel()).zero_()
+            elif p.grad.is_sparse:
+                view = p.grad.to_dense().view(-1)
+            else:
+                view = p.grad.reshape(-1)
+            views.append(view)
+        return torch.cat(views, 0)
+
+
 # Define LBFGS optimizer
 def get_input_optimizer(first_pass_img):
-    optimizer = optim.LBFGS([first_pass_img.requires_grad_()])
+    optimizer = FixedLBFGS([first_pass_img.requires_grad_()])
     return optimizer
 
 optimizer = get_input_optimizer(first_pass_img)
@@ -226,6 +247,4 @@ input_img_np = first_pass_img.transpose(1,3).transpose(1,2).cpu().data.numpy()[0
 
 # Save image from the second pass
 imsave('results/'+str(name)+'_second_pass.png', input_img_np.astype(np.uint8))
-
-
 

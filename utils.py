@@ -25,6 +25,8 @@ import asyncio
 import aiohttp
 import async_timeout
 
+CENTER_LOCATION_NUMBER = 0.5
+
 
 def numpy2tensor(np_array, gpu_id):
     if len(np_array.shape) == 2:
@@ -36,8 +38,22 @@ def numpy2tensor(np_array, gpu_id):
 
 def make_canvas_mask(x_start, y_start, target_img, mask):
     canvas_mask = np.zeros((target_img.shape[0], target_img.shape[1]))
-    canvas_mask[int(x_start-mask.shape[0]*0.5):int(x_start+mask.shape[0]*0.5), int(y_start-mask.shape[1]*0.5):int(y_start+mask.shape[1]*0.5)] = mask
+    canvas_mask = get_placed_canvas_with_image(canvas_mask, mask, mask, x_start, y_start)
     return canvas_mask
+
+
+def get_placed_canvas_with_image(canvas, shape_image, source_image, x_start, y_start):
+    target_canvas = canvas
+    if x_start == 0 and y_start == 0:
+        target_canvas = source_image
+    else:
+        target_canvas[
+        int(x_start - shape_image.shape[0] * CENTER_LOCATION_NUMBER):int(
+            x_start + shape_image.shape[0] * CENTER_LOCATION_NUMBER),
+        int(y_start - shape_image.shape[1] * CENTER_LOCATION_NUMBER):int(
+            y_start + shape_image.shape[1] * CENTER_LOCATION_NUMBER)] = source_image
+    return target_canvas
+
 
 def laplacian_filter_tensor(img_tensor, gpu_id):
 
@@ -76,18 +92,18 @@ def compute_gt_gradient(x_start, y_start, source_img, target_img, mask, gpu_id):
     
     # mask and canvas mask
     canvas_mask = np.zeros((target_img.shape[0], target_img.shape[1]))
-    canvas_mask[int(x_start-source_img.shape[0]*0.5):int(x_start+source_img.shape[0]*0.5), int(y_start-source_img.shape[1]*0.5):int(y_start+source_img.shape[1]*0.5)] = mask
+    canvas_mask = get_placed_canvas_with_image(canvas_mask, source_img, mask, x_start, y_start)
     
     # foreground gradient
     red_source_gradient = red_source_gradient * mask
     green_source_gradient = green_source_gradient * mask
     blue_source_gradient = blue_source_gradient * mask
     red_foreground_gradient = np.zeros((canvas_mask.shape))
-    red_foreground_gradient[int(x_start-source_img.shape[0]*0.5):int(x_start+source_img.shape[0]*0.5), int(y_start-source_img.shape[1]*0.5):int(y_start+source_img.shape[1]*0.5)] = red_source_gradient
+    red_foreground_gradient = get_placed_canvas_with_image(red_foreground_gradient, source_img, red_source_gradient, x_start, y_start)
     green_foreground_gradient = np.zeros((canvas_mask.shape))
-    green_foreground_gradient[int(x_start-source_img.shape[0]*0.5):int(x_start+source_img.shape[0]*0.5), int(y_start-source_img.shape[1]*0.5):int(y_start+source_img.shape[1]*0.5)] = green_source_gradient
+    green_foreground_gradient = get_placed_canvas_with_image(green_foreground_gradient, source_img, green_source_gradient, x_start, y_start)
     blue_foreground_gradient = np.zeros((canvas_mask.shape))
-    blue_foreground_gradient[int(x_start-source_img.shape[0]*0.5):int(x_start+source_img.shape[0]*0.5), int(y_start-source_img.shape[1]*0.5):int(y_start+source_img.shape[1]*0.5)] = blue_source_gradient
+    blue_foreground_gradient = get_placed_canvas_with_image(blue_foreground_gradient, source_img, blue_source_gradient, x_start, y_start)
     
     # background gradient
     red_background_gradient = red_target_gradient * (canvas_mask - 1) * (-1)

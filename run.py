@@ -10,6 +10,10 @@ from utils import compute_gt_gradient, make_canvas_mask, numpy2tensor, laplacian
                   MeanShift, Vgg16, gram_matrix
 import argparse
 
+FIRST_IMAGE_SAVE_STEP = 10
+
+IMAGE_SAVE_STEPS = 200
+
 parser = argparse.ArgumentParser()
 parser.add_argument('--source_file', type=str, default='data/1_source.png', help='path to the source image')
 parser.add_argument('--mask_file', type=str, default='data/1_mask.png', help='path to the mask image')
@@ -164,7 +168,7 @@ while run[0] <= num_steps:
         run[0] += 1
         return loss
 
-    if run[0] % 500 == 0 or run[0] == 10:
+    if run[0] % IMAGE_SAVE_STEPS == 0 or run[0] == FIRST_IMAGE_SAVE_STEP:
         save_result(input_img, run[0])
     optimizer.step(closure)
 

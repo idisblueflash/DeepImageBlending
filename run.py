@@ -162,8 +162,8 @@ while run[0] <= num_steps:
         run[0] += 1
         return loss
 
-    if run[0] % 500 == 0 or run[0] == 10:
-        save_result(input_img, run[0])
+    # if run[0] % 500 == 0 or run[0] == 10:
+    #     save_result(input_img, run[0])
     optimizer.step(closure)
 
 name = save_result(input_img, None)

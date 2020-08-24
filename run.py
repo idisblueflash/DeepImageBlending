@@ -158,7 +158,6 @@ while run[0] <= num_steps:
         save_result(input_img, run[0])
     optimizer.step(closure)
 
-
 save_result(input_img, num_steps)
 
 ###################################
@@ -170,6 +169,7 @@ style_weight = 1e7; content_weight = 1; tv_weight = 1e-6
 ss = 512; ts = 512
 num_steps = opt.num_steps
 
+name = source_file.split('/')[1].split('_')[0]
 first_pass_img_file = 'results/'+str(name)+'_first_pass.png'
 first_pass_img = np.array(Image.open(first_pass_img_file).convert('RGB').resize((ss, ss)))
 target_img = np.array(Image.open(target_file).convert('RGB').resize((ts, ts)))

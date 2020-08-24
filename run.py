@@ -79,12 +79,14 @@ vgg = Vgg16().to(gpu_id)
 
 
 def save_result(input_img, step_number):
+    from copy import copy
+    image_local = copy(input_img)
     # clamp the pixels range into 0 ~ 255
-    input_img.data.clamp_(0, 255)
+    image_local.data.clamp_(0, 255)
 
     # Make the Final Blended Image
     blend_img = torch.zeros(target_img.shape).to(gpu_id)
-    blend_img = input_img*canvas_mask + target_img*(canvas_mask-1)*(-1)
+    blend_img = image_local*canvas_mask + target_img*(canvas_mask-1)*(-1)
     blend_img_np = blend_img.transpose(1,3).transpose(1,2).cpu().data.numpy()[0]
 
     # Save image from the first pass
@@ -162,8 +164,8 @@ while run[0] <= num_steps:
         run[0] += 1
         return loss
 
-    # if run[0] % 500 == 0 or run[0] == 10:
-    #     save_result(input_img, run[0])
+    if run[0] % 500 == 0 or run[0] == 10:
+        save_result(input_img, run[0])
     optimizer.step(closure)
 
 name = save_result(input_img, None)
